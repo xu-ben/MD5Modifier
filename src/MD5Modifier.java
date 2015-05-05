@@ -42,7 +42,7 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 		JMenuBar menuBar = new JMenuBar();
 		menuBar.add(menuOperate);
 		this.setJMenuBar(menuBar);
-
+		
 		// Container con = this.getContentPane();
 		/**
 		 * 使程序运行时在屏幕居中显示
@@ -67,44 +67,57 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 	}
 
 	private boolean treatDir(File f) {
-		System.out.println(f.getAbsolutePath());
+		if (f.isDirectory()) {
+			dirnum++;
+			System.out.printf("%d: %s\n", dirnum, f.getAbsoluteFile());
+			File[] fs = f.listFiles();
+			if (fs == null) {
+				return true;
+			}
+			for (File child : fs) {
+				treatDir(child);
+			}
+		} else {
+			try {
+				return treatFile(f.getCanonicalPath());
+			} catch (IOException e) {
+				e.printStackTrace();
+				return false;
+			}
+		}
 		return true;
 	}
-	
-	private void runcmd(String[] cmds) throws Exception {
+
+	private void run(String cmd) throws Exception {
 		Runtime run = Runtime.getRuntime();
-		for (int i = 0; i < cmds.length; i++) {
-			run.exec(cmds[i]);
+		Process p = run.exec(cmd);
+		if (p.waitFor() != 0) {
+			throw new Exception(String.format("p.waitFor() != 0 : %s\n", cmd));
 		}
 	}
 
 	private boolean treatFile(String file) {
+		filenum++;
+		System.out.printf("%d: %s\n", filenum, file);
 		File f = new File(file);
 		String parent = f.getParent();
 		String name = f.getName();
-		String[] cmds = new String[5]; 
-//		System.out.println("parent = " + parent);
 		if (parent == null) {
 			return false;
 		}
 		try {
-			// 生成一个有2个空格的文本文件
+
 			String tmpfile = parent + "\\ilzl1988.txt";
-//			System.out.println("tmpfile = " + tmpfile);
-			cmds[0] = "fsutil file createnew \"" + tmpfile + "\" 2";
-			//runcmd("fsutil file createnew \"" + tmpfile + "\" 2");
-//			Thread.sleep(100);
-			
-			cmds[1] = "cmd /c copy /b \"" + file + "\"+\"" + tmpfile + "\" \"" + file + "_tmp\"";
-			
-			cmds[2] = "cmd /c del /q /s \"" + tmpfile + "\"";
-			
-			cmds[3] = "cmd /c del /q /s \"" + file + "\"";
-			
-			cmds[4] = "cmd /c ren \"" + file + "_tmp\" \"" + name + "\"";
-		//	Runtime run = Runtime.getRuntime();
-	//		run.exec(cmds);
-			runcmd(cmds);
+			// 生成一个有2个空格的文本文件
+			run(String.format("fsutil file createnew \"%s\" 2", tmpfile));
+			// 将文本文件合并到视频文件中
+			run(String.format("cmd /c copy /b \"%s\"+\"%s\" \"%s_tmp~\"", file,
+					tmpfile, file));
+
+			run(String.format("cmd /c del /q \"%s\"", tmpfile));
+			run(String.format("cmd /c del /q \"%s\"", file));
+			run(String.format("cmd /c ren \"%s_tmp~\" \"%s\"", file, name));
+
 		} catch (Exception e) {
 			e.printStackTrace();
 			return false;
@@ -116,6 +129,8 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 		JMenuItem m = (JMenuItem) e.getSource();
 		String filePath = null;
+		filenum = 0;
+		dirnum = 0;
 		if (m == menuModifyFile) {
 			try {
 				JFileChooser fileChooser = new JFileChooser(".");
@@ -130,6 +145,9 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 				return;
 			}
 			if (treatFile(filePath)) {
+				String show = String.format("对文件%s的修改完毕!", filePath);
+				JOptionPane.showMessageDialog(this, show, "恭喜",
+						JOptionPane.OK_OPTION);
 
 			} else {
 				JOptionPane.showMessageDialog(this, "处理出错，请检查!", "抱歉",
@@ -149,19 +167,14 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 				return;
 			}
 			if (treatDir(new File(filePath))) {
-
+				String show = String.format("对目录%s的修改完毕!共处理%d个目录, %d个文件",
+						filePath, dirnum, filenum);
+				JOptionPane.showMessageDialog(this, show, "恭喜",
+						JOptionPane.OK_OPTION);
 			} else {
 				JOptionPane.showMessageDialog(this, "处理出错，请检查!", "抱歉",
 						JOptionPane.ERROR_MESSAGE);
 			}
 		}
-		/*
-		 * CleanProject ce = new CleanProject(); if (ce.run(filePath, type)) {
-		 * JOptionPane.showMessageDialog(this, "清理完毕!\n共清理文件夹" + dirnum + "个，文件"
-		 * + filenum + "个!", "恭喜", JOptionPane.OK_OPTION); } else {
-		 * JOptionPane.showMessageDialog(this, "清理出错!", "抱歉",
-		 * JOptionPane.ERROR_MESSAGE); }/*
-		 */
-
 	}
 }
