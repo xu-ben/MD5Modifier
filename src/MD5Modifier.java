@@ -157,7 +157,7 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 		dirnum = 0;
 		if (m == menuModifyFile) {
 			try {
-				JFileChooser fileChooser = new JFileChooser(".");
+				JFileChooser fileChooser = new JFileChooser("");
 				fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 				int n = fileChooser.showOpenDialog(this);
 				if (JFileChooser.APPROVE_OPTION == n) {
@@ -179,7 +179,7 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 			}
 		} else if (m == menuModifyDir) {
 			try {
-				JFileChooser fileChooser = new JFileChooser(".");
+				JFileChooser fileChooser = new JFileChooser("");
 				fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 				int n = fileChooser.showOpenDialog(this);
 				if (JFileChooser.APPROVE_OPTION == n) {
@@ -201,7 +201,7 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 			}
 		} else if (m == menuRename) {
 			try {
-				JFileChooser fileChooser = new JFileChooser(".");
+				JFileChooser fileChooser = new JFileChooser("");
 				fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 				int n = fileChooser.showOpenDialog(this);
 				if (JFileChooser.APPROVE_OPTION == n) {
