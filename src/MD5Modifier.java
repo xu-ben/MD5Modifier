@@ -26,13 +26,16 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 	 * 处理的文件数目
 	 */
 	public static int filenum = 0;
-	
+
 	public static Logger log = Logger.getLogger("log.txt");
 
-	private JMenuItem menuModifyFile = new JMenuItem("处理单个文件...");
+	private JMenuItem menuModifyFile = new JMenuItem("处理单个文件(替换)...");
 
-	private JMenuItem menuModifyDir = new JMenuItem("处理一个目录下所有文件...");
-	
+	private JMenuItem menuModifyDir = new JMenuItem("处理一个目录下所有文件(替换)...");
+
+	private JMenuItem menuCopyDir = new JMenuItem(
+			"处理一个目录下所有文件(拷贝复本,文件名以cp_开头)...");
+
 	private JMenuItem menuRename = new JMenuItem("批量去掉文件名中连续空格...");
 
 	MD5Modifier() {
@@ -43,13 +46,15 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 		menuModifyFile.addActionListener(this);
 		menuOperate.add(menuModifyDir);
 		menuModifyDir.addActionListener(this);
+		menuOperate.add(menuCopyDir);
+		menuCopyDir.addActionListener(this);
 		menuOperate.add(menuRename);
 		menuRename.addActionListener(this);
 
 		JMenuBar menuBar = new JMenuBar();
 		menuBar.add(menuOperate);
 		this.setJMenuBar(menuBar);
-		
+
 		// Container con = this.getContentPane();
 		/**
 		 * 使程序运行时在屏幕居中显示
@@ -61,7 +66,7 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 		final int top = (screen.height - height) / 2;
 		this.setLocation(left, top);
 		this.setSize(width, height);
-		this.setTitle("批量修改媒体文件(视频)MD5小工具1.0-徐犇开发");
+		this.setTitle("批量修改媒体文件(视频)MD5小工具1.1-徐犇开发");
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setVisible(true);
 	}
@@ -72,7 +77,7 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 	public static void main(String[] args) {
 		new MD5Modifier();
 	}
-	
+
 	private boolean rename(File file) {
 		if (file.isDirectory()) {
 			File[] fs = file.listFiles();
@@ -90,7 +95,7 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 		return true;
 	}
 
-	private boolean treatDir(File f) {
+	private boolean treatDir(File f, boolean copy) {
 		if (f.isDirectory()) {
 			dirnum++;
 			log.info(String.format("%d: %s\n", dirnum, f.getAbsoluteFile()));
@@ -99,11 +104,11 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 				return true;
 			}
 			for (File child : fs) {
-				treatDir(child);
+				treatDir(child, copy);
 			}
 		} else {
 			try {
-				return treatFile(f.getCanonicalPath());
+				return treatFile(f.getCanonicalPath(), copy);
 			} catch (IOException e) {
 				e.printStackTrace();
 				return false;
@@ -120,17 +125,18 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 		}
 	}
 
-	private boolean treatFile(String file) {
+	private boolean treatFile(String file, boolean copy) {
 		filenum++;
 		log.info(String.format("%d: %s\n", filenum, file));
 		File f = new File(file);
 		String parent = f.getParent();
+		String parentdirname = f.getParentFile().getName();
+		String copytodir = parent + "\\" + parentdirname + "_modified";
 		String name = f.getName();
 		if (parent == null) {
 			return false;
 		}
 		try {
-
 			String tmpfile = parent + "\\ilzl1988.txt";
 			// 生成一个指定大小的文本文件
 			run(String.format("fsutil file createnew \"%s\" 1", tmpfile));
@@ -139,9 +145,13 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 					tmpfile, file));
 
 			run(String.format("cmd /c del /q \"%s\"", tmpfile));
-			run(String.format("cmd /c del /q \"%s\"", file));
-			run(String.format("cmd /c ren \"%s_tmp~\" \"%s\"", file, name));
-
+			if (copy) {
+				run(String.format("cmd /c md \"%s\"", copytodir));
+				run(String.format("cmd /c move \"%s_tmp~\" \"%s\"", file, copytodir + "\\" + name));
+			} else {
+				run(String.format("cmd /c del /q \"%s\"", file));
+				run(String.format("cmd /c ren \"%s_tmp~\" \"%s\"", file, name));
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			return false;
@@ -168,7 +178,7 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 			} catch (Exception ex) {
 				return;
 			}
-			if (treatFile(filePath)) {
+			if (treatFile(filePath, false)) {
 				String show = String.format("对文件%s的修改完毕!", filePath);
 				JOptionPane.showMessageDialog(this, show, "恭喜",
 						JOptionPane.OK_OPTION);
@@ -177,7 +187,7 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 				JOptionPane.showMessageDialog(this, "处理出错，请检查!", "抱歉",
 						JOptionPane.ERROR_MESSAGE);
 			}
-		} else if (m == menuModifyDir) {
+		} else if (m == menuModifyDir || m == menuCopyDir) {
 			try {
 				JFileChooser fileChooser = new JFileChooser("");
 				fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -190,7 +200,8 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 			} catch (Exception ex) {
 				return;
 			}
-			if (treatDir(new File(filePath))) {
+			boolean copy = m == menuCopyDir;
+			if (treatDir(new File(filePath), copy)) {
 				String show = String.format("对目录%s的修改完毕!共处理%d个目录, %d个文件",
 						filePath, dirnum, filenum);
 				JOptionPane.showMessageDialog(this, show, "恭喜",
