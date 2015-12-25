@@ -34,7 +34,7 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 	private JMenuItem menuModifyDir = new JMenuItem("处理一个目录下所有文件(替换)...");
 
 	private JMenuItem menuCopyDir = new JMenuItem(
-			"处理一个目录下所有文件(拷贝复本,文件名以cp_开头)...");
+			"处理一个目录下所有文件(拷贝复本至目录下的子目录中,子目录以父录名加_modified)...(请尽量只用于一级目录)");
 
 	private JMenuItem menuRename = new JMenuItem("批量去掉文件名中连续空格...");
 
@@ -132,6 +132,10 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 		String parent = f.getParent();
 		String parentdirname = f.getParentFile().getName();
 		String copytodir = parent + "\\" + parentdirname + "_modified";
+		if (copy) {
+			File dir = new File(copytodir);
+			dir.mkdirs();
+		}
 		String name = f.getName();
 		if (parent == null) {
 			return false;
@@ -146,7 +150,6 @@ public final class MD5Modifier extends JFrame implements ActionListener {
 
 			run(String.format("cmd /c del /q \"%s\"", tmpfile));
 			if (copy) {
-				run(String.format("cmd /c md \"%s\"", copytodir));
 				run(String.format("cmd /c move \"%s_tmp~\" \"%s\"", file, copytodir + "\\" + name));
 			} else {
 				run(String.format("cmd /c del /q \"%s\"", file));
